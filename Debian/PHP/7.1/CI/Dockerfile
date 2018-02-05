@@ -31,9 +31,9 @@ RUN echo "deb http://ftp.us.debian.org/debian testing main contrib non-free" >> 
     && cleanup
 
 
-RUN apt-get update && apt-get install -yqq --no-install-recommends php7.1-dev php-pear \
+RUN apt-get update && apt-get install -yqq --no-install-recommends php7.1-dev php-pear build-essential \
     && pecl install ast \
-    && apt-get purge php7.1-dev build-essential -yqq \
+    && apt-get purge php7.1-dev php-pear build-essential -yqq \
     && cleanup
 
 RUN echo "zend_extension=xdebug.so" > /etc/php/7.1/mods-available/xdebug.ini && \
