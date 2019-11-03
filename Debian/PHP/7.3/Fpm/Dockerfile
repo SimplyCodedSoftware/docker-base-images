@@ -2,13 +2,17 @@ FROM simplycodedsoftware/debian:latest
 
 ENV PHP_XDEBUG_REMOTE_HOST 172.17.0.1
 ENV COMPOSER_HOME /var/www/.composer
+ENV COMPOSE_HTTP_TIMEOUT=3600
+ENV APP_ENV="dev"
+
+WORKDIR /data/app
 
 RUN apt-get update -qq && apt-get install --no-install-recommends -qqy apt-utils curl python-setuptools wget apt-transport-https lsb-release ca-certificates -y \
 	&& wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg \
 	&& echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list \
 	&& apt-get update \
 	&& DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -yqq \
-	    php7.3 php7.3-cli php7.3-fpm php7.3-common php7.3-curl php7.3-fpm php7.3-json php7.3-mysql php7.3-pgsql php7.3-mongodb php7.3-mbstring php7.3-bcmath php7.3-xdebug php7.3-redis php7.3-opcache \
+	    php7.3 php7.3-cli php7.3-fpm php7.3-common php7.3-curl php7.3-fpm php7.3-json php7.3-mysql php7.3-pgsql php7.3-mongodb php7.3-mbstring php7.3-bcmath php7.3-xdebug php7.3-redis php7.3-opcache php7.3-opcache php7.3-zip php7.3-xml php7.3-xmlrpc php7.3-xsl php7.3-readline \
     && usermod -ou 1000 -g www-data www-data \
     && chsh -s /bin/sh www-data \
     && phpdismod xdebug \
@@ -43,9 +47,10 @@ RUN echo "zend_extension=xdebug.so" > /etc/php/7.3/mods-available/xdebug.ini && 
     echo "extension=ast.so" > /etc/php/7.3/mods-available/ast.ini
 
 ADD opcache-mode.sh /data/entrypoint.d/opcache-mode.sh
+ADD install-dependencies.sh /data/entrypoint.d/install-dependencies.sh
 ADD debug-mode.sh /usr/local/bin/debug-mode.sh
 ADD debug-mode-off.sh /usr/local/bin/debug-mode-off.sh
-RUN chmod +x /data/entrypoint.d/opcache-mode.sh /usr/local/bin/debug-mode.sh /usr/local/bin/debug-mode-off.sh
+RUN chmod +x /data/entrypoint.d/opcache-mode.sh /usr/local/bin/debug-mode.sh /usr/local/bin/debug-mode-off.sh /data/entrypoint.d/install-dependencies.sh
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 RUN chmod +x /usr/local/bin/composer
