@@ -46,11 +46,11 @@ RUN echo "zend_extension=xdebug.so" > /etc/php/7.3/mods-available/xdebug.ini && 
     echo "xdebug.profiler_output_dir=\"/tmp\"" >> /etc/php/7.3/mods-available/xdebug.ini && \
     echo "extension=ast.so" > /etc/php/7.3/mods-available/ast.ini
 
-ADD opcache-mode.sh /data/entrypoint.d/opcache-mode.sh
-ADD install-dependencies.sh /data/entrypoint.d/install-dependencies.sh
+ADD opcache-mode.sh /data/entrypoint.d/2_opcache-mode.sh
+ADD install-dependencies.sh /data/entrypoint.d/1_install-dependencies.sh
 ADD debug-mode.sh /usr/local/bin/debug-mode.sh
 ADD debug-mode-off.sh /usr/local/bin/debug-mode-off.sh
-RUN chmod +x /data/entrypoint.d/opcache-mode.sh /usr/local/bin/debug-mode.sh /usr/local/bin/debug-mode-off.sh /data/entrypoint.d/install-dependencies.sh
+RUN chmod +x /data/entrypoint.d/2_opcache-mode.sh /usr/local/bin/debug-mode.sh /usr/local/bin/debug-mode-off.sh /data/entrypoint.d/1_install-dependencies.sh
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 RUN chmod +x /usr/local/bin/composer

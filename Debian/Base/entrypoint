@@ -20,5 +20,5 @@ then
 	done
 fi
 
-echo "Starting application"
+echo "Starting application using $@"
 exec "$@"
