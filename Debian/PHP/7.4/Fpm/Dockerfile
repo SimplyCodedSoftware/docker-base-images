@@ -17,7 +17,7 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -qqy apt-utils
 	&& echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list \
 	&& apt-get update \
 	&& DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends -yqq \
-	    php7.4 php7.4-cli php7.4-fpm php7.4-common php7.4-curl php7.4-fpm php7.4-json php7.4-mysql php7.4-pgsql php7.4-mongodb php7.4-mbstring php7.4-bcmath php7.4-xdebug php7.4-opcache php7.4-opcache php7.4-zip php7.4-xml php7.4-xmlrpc php7.4-xsl php7.4-readline \
+	    php7.4 php7.4-cli php7.4-fpm php7.4-common php7.4-curl php7.4-fpm php7.4-json php7.4-mysql php7.4-pgsql php7.4-mongodb php7.4-mbstring php7.4-bcmath php7.4-xdebug php7.4-opcache php7.4-opcache php7.4-zip php7.4-xml php7.4-xmlrpc php7.4-xsl php7.4-readline php7.4-sqlite3 \
     && usermod -ou 1000 -g www-data www-data \
     && chsh -s /bin/sh www-data \
     && phpdismod xdebug \
