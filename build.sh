@@ -2,6 +2,8 @@
 
 
 docker build -t simplycodedsoftware/debian:latest Debian/Base \
+&& docker build -t simplycodedsoftware/php:8.0 Debian/PHP/8.0/Fpm \
+&& docker build -t simplycodedsoftware/nginx:php-8.0 Debian/PHP/8.0/Fpm-Nginx \
 && docker build -t simplycodedsoftware/php:7.4 Debian/PHP/7.4/Fpm \
 && docker build -t simplycodedsoftware/ci:7.4 Debian/PHP/7.4/CI \
 && docker build -t simplycodedsoftware/nginx:php-7.4 Debian/PHP/7.4/Fpm-Nginx \
