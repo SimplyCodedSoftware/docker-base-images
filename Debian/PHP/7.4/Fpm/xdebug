@@ -1,0 +1,65 @@
+#!/bin/sh
+
+if [ $# -eq 0 ] || [ "--help" = "$1" ] || [ "-h" = "$1" ]
+then
+	default=$(printf "\033[0m")
+	title=$(printf "\033[33m")
+	info=$(printf "\033[32m")
+
+	cat <<USAGE
+${title}Usage:${default}
+  xdebug [-h|--help] [<command>]
+${title}Help:${default}
+ The ${info}xdebug${default} command allows to run a PHP command with Xdebug remote debug enabled.
+ Run a local executable PHP script:
+   ${info}xdebug bin/console symfony:command${default}
+ Run the PHP command:
+   ${info}xdebug php script.php${default}
+USAGE
+
+	if [ $# -eq 0 ]
+	then
+		exit 3
+	fi
+
+	exit 0
+fi
+
+run_with_xdebug() {
+	if ! command -v php > /dev/null
+	then
+		echo "Command php not found"
+		exit 4
+	fi
+
+	XDEBUG_CONFIG=1 \
+	php \
+		-dzend_extension=xdebug.so \
+		-dxdebug.remote_enable=on \
+		-dxdebug.remote_host=172.17.0.1 \
+		-dxdebug.remote_autostart=1 \
+		-dxdebug.remote_connect_back=0 \
+		"$@"
+}
+
+if [ -f "$1" ]
+then
+	run_with_xdebug "$@"
+	exit 0
+fi
+
+command="$1"
+shift
+
+if [ "php" != "$command" ]
+then
+	if ! command -v "$command" > /dev/null 2>&1
+	then
+		echo "Not a PHP file or a command: $command"
+		exit 4
+	fi
+
+	run_with_xdebug "$(command -v "$command")" "$@"
+else
+	run_with_xdebug "$@"
+fi

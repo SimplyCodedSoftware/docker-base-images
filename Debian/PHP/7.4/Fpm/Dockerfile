@@ -64,5 +64,9 @@ RUN /usr/local/bin/composer global require "hirak/prestissimo" \
     && chown www-data:www-data -R /var/www/.composer \
     && su deploy -c '/usr/local/bin/composer global require "hirak/prestissimo"'
 
+ENV XDEBUG_CONFIG="idekey=PHPSTORM"
+ENV PHP_IDE_CONFIG="serverName=_"
+ADD xdebug /usr/local/bin/xdebug
+RUN chmod +x /usr/local/bin/xdebug
 
 CMD ["php-fpm7.4", "--nodaemonize"]
