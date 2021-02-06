@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 
 
 docker build --pull -t simplycodedsoftware/debian:latest Debian/Base \
