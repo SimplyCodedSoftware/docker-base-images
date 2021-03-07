@@ -5,6 +5,7 @@ ENV COMPOSE_HTTP_TIMEOUT=3600
 ENV APP_ENV="dev"
 ENV PHP_IDE_CONFIG="serverName=_"
 ENV XDEBUG_IDE_KEY="PHPSTORM"
+ENV APP_INSTALL_DEPENDENCIES="false"
 
 RUN apt-get update \
     && apt-get install lsb-release ca-certificates apt-transport-https software-properties-common wget -y \
@@ -16,6 +17,15 @@ RUN apt-get update \
     && chsh -s /bin/sh www-data \
     && phpdismod xdebug \
     && cleanup
+
+RUN sed -i -e 's/\/run\/php\/php8\.0-fpm\.sock/0\.0\.0\.0:9000/g' /etc/php/8.0/fpm/pool.d/www.conf \
+    && sed -i 's/;clear_env = no/clear_env = no/g' /etc/php/8.0/fpm/pool.d/www.conf \
+    && touch /var/log/php8.0-fpm.log \
+    && chown 1000:1000 /var/log/php8.0-fpm.log
+
+ADD prepare-fpm.sh /data/entrypoint.d/1_prepare-fpm.sh
+ADD install-dependencies.sh /data/entrypoint.d/2_install-dependencies.sh
+RUN chmod +x /data/entrypoint.d/1_prepare-fpm.sh /data/entrypoint.d/2_install-dependencies.sh
 
 WORKDIR /data/app
 
