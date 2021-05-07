@@ -32,13 +32,7 @@ run_with_xdebug() {
 		exit 4
 	fi
 
-	XDEBUG_SESSION=PHPSTORM php \
-		-dzend_extension=xdebug.so \
-		-dxdebug.mode=debug \
-		-dxdebug.client_port=9003 \
-		-dxdebug.client_host=172.17.0.1 \
-		-dxdebug.cli_color=1 \
-		"$@"
+	PHP_IDE_CONFIG=serverName=_ php -dzend_extension=xdebug.so -dxdebug.mode=debug -dxdebug.start_with_request=yes -dxdebug.client_port=9003 -dxdebug.client_host=172.17.0.1 "$@"
 }
 
 if [ -f "$1" ]
