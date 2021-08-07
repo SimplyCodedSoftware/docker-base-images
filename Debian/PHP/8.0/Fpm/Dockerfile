@@ -28,7 +28,8 @@ WORKDIR /data/app
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 RUN chmod +x /usr/local/bin/composer \
-    && mkdir -p /var/www/.composer/cache/vcs \
+    && mkdir -p /var/www/.composer/cache/vcs /run/php \
+    && chmod 775 -R /run/php \
     && chown www-data:www-data -R /var/www/.composer
 
 ADD xdebug.ini /etc/php/8.0/mods-available/xdebug.ini
