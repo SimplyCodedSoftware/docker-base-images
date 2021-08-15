@@ -32,7 +32,8 @@ WORKDIR /data/app
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 RUN chmod +x /usr/local/bin/composer \
     && mkdir -p /var/www/.composer/cache/vcs \
-    && chown www-data:www-data -R /var/www/.composer
+    && chown www-data:www-data -R /var/www/.composer \
+    && /usr/local/bin/composer self-update
 
 ADD xdebug.ini /etc/php/8.0/mods-available/xdebug.ini
 ADD xdebug /usr/local/bin/xdebug
