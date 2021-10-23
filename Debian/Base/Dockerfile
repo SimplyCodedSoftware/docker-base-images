@@ -1,4 +1,4 @@
-FROM debian:stretch
+FROM debian:bullseye
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -14,6 +14,7 @@ ADD start-supervisor.sh /usr/local/bin/start-supervisor
 RUN chmod +x /usr/local/bin/entrypoint /usr/local/bin/wait4tcp /usr/local/bin/cleanup /usr/local/bin/start-supervisor
 
 RUN apt-get update \
+    && apt-get dist-upgrade \
     && apt-get install -yqq --no-install-recommends curl zip git ca-certificates openssh-client less vim supervisor git \
     && useradd -g 33 -ou 1000 -m deploy \
     && cleanup
