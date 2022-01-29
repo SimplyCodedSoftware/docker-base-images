@@ -1,26 +1,4 @@
-FROM 8.1.0beta2-fpm-alpine
-
-# BASE
-ENV DEBIAN_FRONTEND=noninteractive
-
-RUN touch /etc/apt/apt.conf \
-    && echo 'APT::Install-Recommends "0";' > /etc/apt/apt.conf \
-    && echo 'APT::Install-Suggests "0";'  > /etc/apt/apt.conf
-
-ADD entrypoint /usr/local/bin/entrypoint
-ADD wait4tcp /usr/local/bin/wait4tcp
-ADD cleanup /usr/local/bin/cleanup
-ADD start-supervisor.sh /usr/local/bin/start-supervisor
-
-RUN chmod +x /usr/local/bin/entrypoint /usr/local/bin/wait4tcp /usr/local/bin/cleanup /usr/local/bin/start-supervisor
-
-RUN apt-get update \
-    && apt-get install -yqq --no-install-recommends curl zip git ca-certificates openssh-client less vim supervisor git \
-    && useradd -g 33 -ou 1000 -m deploy \
-    && cleanup
-
-ENTRYPOINT ["/usr/local/bin/entrypoint"]
-# END BASE
+FROM simplycodedsoftware/debian:latest
 
 ENV COMPOSER_HOME /var/www/.composer
 ENV COMPOSE_HTTP_TIMEOUT=3600
@@ -40,7 +18,7 @@ RUN apt-get update \
     && phpdismod xdebug \
     && cleanup
 
-RUN sed -i -e 's/\/run\/php\/php8\.0-fpm\.sock/0\.0\.0\.0:9000/g' /etc/php/8.1/fpm/pool.d/www.conf \
+RUN sed -i -e 's/\/run\/php\/php8\.1-fpm\.sock/0\.0\.0\.0:9000/g' /etc/php/8.1/fpm/pool.d/www.conf \
     && sed -i 's/;clear_env = no/clear_env = no/g' /etc/php/8.1/fpm/pool.d/www.conf \
     && touch /var/log/php8.1-fpm.log \
     && chown 1000:1000 /var/log/php8.1-fpm.log
