@@ -32,7 +32,8 @@ run_with_xdebug() {
 		exit 4
 	fi
 
-	PHP_IDE_CONFIG=serverName=_ php -dzend_extension=xdebug.so -dxdebug.mode=debug -dxdebug.start_with_request=yes -dxdebug.client_port=9003 -dxdebug.client_host=172.17.0.1 "$@"
+  XDEBUG_HOST=${XDEBUG_HOST:-$(route -n | egrep "^0.0.0.0" | awk '{print $2}')}
+	PHP_IDE_CONFIG=serverName=_ php -dzend_extension=xdebug.so -dxdebug.mode=debug -dxdebug.start_with_request=yes -dxdebug.client_port=9003 -dxdebug.client_host=$XDEBUG_HOST "$@"
 }
 
 if [ -f "$1" ]

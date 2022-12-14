@@ -15,7 +15,7 @@ RUN chmod +x /usr/local/bin/entrypoint /usr/local/bin/wait4tcp /usr/local/bin/cl
 
 RUN apt-get update \
     && apt-get dist-upgrade \
-    && apt-get install -yqq --no-install-recommends curl zip git ca-certificates openssh-client less vim supervisor git \
+    && apt-get install -yqq --no-install-recommends curl zip git ca-certificates openssh-client less vim supervisor git net-tools \
     && useradd -g 33 -ou 1000 -m deploy \
     && cleanup
 

@@ -3,8 +3,6 @@ FROM simplycodedsoftware/debian:latest
 ENV COMPOSER_HOME /var/www/.composer
 ENV COMPOSE_HTTP_TIMEOUT=3600
 ENV APP_ENV="dev"
-ENV PHP_IDE_CONFIG="serverName=_"
-ENV XDEBUG_IDE_KEY="PHPSTORM"
 ENV APP_INSTALL_DEPENDENCIES="false"
 
 RUN apt-get update \
@@ -25,7 +23,8 @@ RUN sed -i -e 's/\/run\/php\/php8\.1-fpm\.sock/0\.0\.0\.0:9000/g' /etc/php/8.1/f
 
 ADD prepare-fpm.sh /data/entrypoint.d/1_prepare-fpm.sh
 ADD install-dependencies.sh /data/entrypoint.d/2_install-dependencies.sh
-RUN chmod +x /data/entrypoint.d/1_prepare-fpm.sh /data/entrypoint.d/2_install-dependencies.sh
+ADD xdebug-entrypoint.sh /data/entrypoint.d/3_xdebug-entrypoint.sh
+RUN chmod +x /data/entrypoint.d/1_prepare-fpm.sh /data/entrypoint.d/2_install-dependencies.sh /data/entrypoint.d/3_xdebug-entrypoint.sh
 
 WORKDIR /data/app
 

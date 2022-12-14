@@ -3,6 +3,7 @@ FROM simplycodedsoftware/debian:latest
 ENV COMPOSER_HOME /var/www/.composer
 ENV COMPOSE_HTTP_TIMEOUT=3600
 ENV APP_ENV="dev"
+ENV APP_INSTALL_DEPENDENCIES="false"
 
 RUN apt-get update \
     && apt-get install lsb-release ca-certificates apt-transport-https software-properties-common wget -y \
@@ -22,7 +23,8 @@ RUN sed -i -e 's/\/run\/php\/php8\.0-fpm\.sock/0\.0\.0\.0:9000/g' /etc/php/8.0/f
 
 ADD prepare-fpm.sh /data/entrypoint.d/1_prepare-fpm.sh
 ADD install-dependencies.sh /data/entrypoint.d/2_install-dependencies.sh
-RUN chmod +x /data/entrypoint.d/1_prepare-fpm.sh /data/entrypoint.d/2_install-dependencies.sh
+ADD xdebug-entrypoint.sh /data/entrypoint.d/3_xdebug-entrypoint.sh
+RUN chmod +x /data/entrypoint.d/1_prepare-fpm.sh /data/entrypoint.d/2_install-dependencies.sh /data/entrypoint.d/3_xdebug-entrypoint.sh
 
 WORKDIR /data/app
 
@@ -33,7 +35,6 @@ RUN chmod +x /usr/local/bin/composer \
     && chown www-data:www-data -R /var/www/.composer
 RUN composer self-update
 
-ADD xdebug.ini /etc/php/8.0/mods-available/xdebug.ini
 ADD xdebug /usr/local/bin/xdebug
 RUN chmod +x /usr/local/bin/xdebug
 
