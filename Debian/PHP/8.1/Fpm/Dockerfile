@@ -5,6 +5,7 @@ ENV COMPOSE_HTTP_TIMEOUT=3600
 ENV APP_ENV="dev"
 ENV APP_INSTALL_DEPENDENCIES="false"
 ENV PHP_IDE_CONFIG="serverName=project"
+ENV XDEBUG_PORT=9003
 
 RUN apt-get update \
     && apt-get install lsb-release ca-certificates apt-transport-https software-properties-common wget -y \
