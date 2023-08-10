@@ -18,7 +18,7 @@ xdebug.start_with_request = 1
 xdebug.client_host = ${XDEBUG_HOST}
 xdebug.client_port = ${XDEBUG_PORT:-9003}
 xdebug.idekey = ${XDEBUG_IDE_KEY:-PHPSTORM}
-xdebug.max_nesting_level = 999999" > /etc/php/8.1/mods-available/xdebug.ini
+xdebug.max_nesting_level = 999999" > /etc/php/8.0/mods-available/xdebug.ini
 phpenmod xdebug;
 else
     echo "Xdebug disabled"

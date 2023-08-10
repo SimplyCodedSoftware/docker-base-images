@@ -34,7 +34,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 RUN chmod +x /usr/local/bin/composer \
     && mkdir -p /var/www/.composer/cache/vcs \
     && chown www-data:www-data -R /var/www/.composer \
-    && /usr/local/bin/composer self-update
+    && /usr/local/bin/composer self-update \
+    && composer global require wikimedia/composer-merge-plugin
 
 ADD xdebug.ini /etc/php/8.2/mods-available/xdebug.ini
 ADD xdebug /usr/local/bin/xdebug
