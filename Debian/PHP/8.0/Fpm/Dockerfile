@@ -35,7 +35,7 @@ RUN chmod +x /usr/local/bin/composer \
     && mkdir -p /var/www/.composer/cache/vcs /run/php \
     && chmod 775 -R /run/php \
     && chown www-data:www-data -R /var/www/.composer
-RUN composer self-update && composer global require wikimedia/composer-merge-plugin
+RUN composer self-update
 
 ADD xdebug /usr/local/bin/xdebug
 RUN chmod +x /usr/local/bin/xdebug
