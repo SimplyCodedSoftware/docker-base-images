@@ -1,4 +1,4 @@
-FROM simplycodedsoftware/php:8.1.29
+FROM simplycodedsoftware/php:8.3.10
 
 RUN apt-get update -qq \
     && apt-get install nginx --no-install-recommends -yqq \

@@ -20,7 +20,7 @@ RUN echo 'memory_limit = 256M' >> /usr/local/etc/php/conf.d/docker-php-ram-limit
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 
-ENV COMPOSER_HOME /var/www/.composer
+ENV COMPOSER_HOME=/var/www/.composer
 ENV COMPOSE_HTTP_TIMEOUT=3600
 ENV APP_ENV="dev"
 ENV APP_INSTALL_DEPENDENCIES="false"
@@ -30,7 +30,7 @@ ENV XDEBUG_PORT=9003
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/install-php-extensions && \
-    install-php-extensions gd xdebug redis curl amqp pgsql pdo_mysql pdo_pgsql mbstring bcmath opcache zip xml readline sqlite3 grpc protobuf opentelemetry
+    install-php-extensions gd xdebug redis curl amqp pgsql pdo_mysql pdo_pgsql mbstring bcmath opcache zip xml readline sqlite3 grpc protobuf opentelemetry rdkafka
 
 ADD prepare-fpm.sh /data/entrypoint.d/1_prepare-fpm.sh
 ADD Common/install-dependencies.sh /data/entrypoint.d/2_install-dependencies.sh

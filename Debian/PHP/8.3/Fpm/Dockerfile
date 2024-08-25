@@ -1,4 +1,4 @@
-FROM php:8.1.29-fpm-bullseye
+FROM php:8.3.10-fpm-bullseye
 
 ENV DEBIAN_FRONTEND=noninteractive
 
