@@ -30,7 +30,7 @@ ENV XDEBUG_PORT=9003
 ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/install-php-extensions && \
-    install-php-extensions gd xdebug redis curl amqp pgsql pdo_mysql pdo_pgsql mbstring bcmath opcache zip xml sqlite3 grpc protobuf opentelemetry rdkafka pcntl
+    install-php-extensions gd xdebug redis curl amqp pgsql pdo_mysql pdo_pgsql mbstring bcmath opcache zip xml sqlite3 grpc protobuf opentelemetry rdkafka pcntl intl
 
 ADD prepare-fpm.sh /data/entrypoint.d/1_prepare-fpm.sh
 ADD Common/install-dependencies.sh /data/entrypoint.d/2_install-dependencies.sh

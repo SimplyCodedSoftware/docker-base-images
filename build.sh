@@ -20,5 +20,5 @@
 #&& docker buildx build --builder mybuilder --platform linux/amd64,linux/arm64 --push -t simplycodedsoftware/php:8.3.11 Debian/PHP/8.3/Fpm \
 #&& docker buildx build --builder mybuilder --platform linux/amd64,linux/arm64 --push -t simplycodedsoftware/nginx-php:8.3.11 Debian/PHP/8.3/Fpm-Nginx \
 #&& without ,linux/arm64 yet because grpc fails
-docker buildx build --builder mybuilder --platform linux/amd64 --push -t simplycodedsoftware/php:8.4.6 Debian/PHP/8.4/Fpm \
-&& docker buildx build --builder mybuilder --platform linux/amd64 --push -t simplycodedsoftware/nginx-php:8.4.6 Debian/PHP/8.4/Fpm-Nginx
+docker buildx build --builder mybuilder --platform linux/amd64 --push -t simplycodedsoftware/php:8.4.7 Debian/PHP/8.4/Fpm \
+&& docker buildx build --builder mybuilder --platform linux/amd64 --push -t simplycodedsoftware/nginx-php:8.4.7 Debian/PHP/8.4/Fpm-Nginx
