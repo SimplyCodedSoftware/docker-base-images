@@ -14,8 +14,7 @@ if [ -n "${WORKTREE_BRANCH:-}" ]; then
     WORKTREE_DIR="/worktrees/$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \n')"
     git -C /repo worktree add "$WORKTREE_DIR" "$WORKTREE_BRANCH" 2>/dev/null \
         || git -C /repo worktree add -b "$WORKTREE_BRANCH" "$WORKTREE_DIR"
-    rmdir /workspace
-    ln -s "$WORKTREE_DIR" /workspace
+    ln -sfn "$WORKTREE_DIR" /workspace
 fi
 
 exec claude --dangerously-skip-permissions "$@"
