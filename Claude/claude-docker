@@ -44,10 +44,16 @@ echo "  Project:  $PROJECT_DIR"
 echo "  Config:   $CLAUDE_CONFIG"
 
 OPTIONAL_MOUNTS=()
+EXTRA_ENV=()
 [ -f "$HOME/.claude.json" ]   && OPTIONAL_MOUNTS+=(-v "$HOME/.claude.json:/home/claude/.claude.host.json:ro")
 [ -d "$HOME/.ssh" ]           && OPTIONAL_MOUNTS+=(-v "$HOME/.ssh:/home/claude/.ssh:ro")
 [ -f "$HOME/.gitconfig" ]     && OPTIONAL_MOUNTS+=(-v "$HOME/.gitconfig:/home/claude/.gitconfig:ro")
 [ -d "$HOME/.config/gh" ]     && OPTIONAL_MOUNTS+=(-v "$HOME/.config/gh:/home/claude/.config/gh:ro")
+
+DEFAULT_CONFIG="$(cd "$HOME/.claude" && pwd)"
+if [[ "$CLAUDE_CONFIG" != "$DEFAULT_CONFIG" ]]; then
+    EXTRA_ENV+=(-e "CLAUDE_STRIP_AUTH=1")
+fi
 
 exec docker run -it --rm \
     --hostname claude-sandbox \
@@ -57,4 +63,5 @@ exec docker run -it --rm \
     -v "$CLAUDE_CONFIG:/home/claude/.claude" \
     -v /var/run/docker.sock:/var/run/docker.sock \
     "${OPTIONAL_MOUNTS[@]}" \
+    "${EXTRA_ENV[@]+"${EXTRA_ENV[@]}"}" \
     "$IMAGE_NAME" "${CLAUDE_ARGS[@]+"${CLAUDE_ARGS[@]}"}"
