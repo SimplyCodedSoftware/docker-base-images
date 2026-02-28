@@ -50,6 +50,9 @@ EXTRA_ENV=()
 [ -f "$HOME/.gitconfig" ]     && OPTIONAL_MOUNTS+=(-v "$HOME/.gitconfig:/home/claude/.gitconfig:ro")
 [ -d "$HOME/.config/gh" ]     && OPTIONAL_MOUNTS+=(-v "$HOME/.config/gh:/home/claude/.config/gh:ro")
 
+GH_TOKEN="$(gh auth token 2>/dev/null || true)"
+[ -n "$GH_TOKEN" ] && EXTRA_ENV+=(-e "GH_TOKEN=$GH_TOKEN")
+
 DEFAULT_CONFIG="$(cd "$HOME/.claude" && pwd)"
 if [[ "$CLAUDE_CONFIG" != "$DEFAULT_CONFIG" ]]; then
     EXTRA_ENV+=(-e "CLAUDE_STRIP_AUTH=1")
