@@ -3,6 +3,7 @@ set -euo pipefail
 
 IMAGE_NAME="simplycodedsoftware/claude-sandbox:latest"
 PROJECT_DIR=""
+WORKTREE=""
 CLAUDE_CONFIG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 CLAUDE_ARGS=()
 
@@ -11,6 +12,7 @@ usage() {
 Usage: claude-docker [options] [project-dir] [-- extra claude args...]
 
 Options:
+  --worktree, -w <name>  Create a git worktree on the given branch
   --help                 Show this help
 
 Environment:
@@ -19,6 +21,8 @@ Environment:
 Examples:
   claude-docker
   claude-docker ~/projects/my-app
+  claude-docker --worktree feature-foo ~/projects/my-app
+  claude-docker -w fix-bug .
   CLAUDE_CONFIG_DIR=~/.claude-personal claude-docker .
   claude-docker . -- --continue
 EOF
@@ -28,6 +32,7 @@ EOF
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --help)       usage ;;
+        --worktree|-w) WORKTREE="$2"; shift; shift ;;
         --)           shift; CLAUDE_ARGS=("$@"); break ;;
         *)            PROJECT_DIR="$1"; shift ;;
     esac
@@ -42,6 +47,7 @@ docker pull "$IMAGE_NAME"
 echo "Starting Claude Code in Docker..."
 echo "  Project:  $PROJECT_DIR"
 echo "  Config:   $CLAUDE_CONFIG"
+[ -n "$WORKTREE" ] && echo "  Worktree: $WORKTREE"
 
 OPTIONAL_MOUNTS=()
 EXTRA_ENV=()
@@ -52,17 +58,24 @@ EXTRA_ENV=()
 
 GH_TOKEN="$(gh auth token 2>/dev/null || true)"
 [ -n "$GH_TOKEN" ] && EXTRA_ENV+=(-e "GH_TOKEN=$GH_TOKEN")
+[ -n "$WORKTREE" ] && EXTRA_ENV+=(-e "WORKTREE_BRANCH=$WORKTREE")
 
 DEFAULT_CONFIG="$(cd "$HOME/.claude" && pwd)"
 if [[ "$CLAUDE_CONFIG" != "$DEFAULT_CONFIG" ]]; then
     EXTRA_ENV+=(-e "CLAUDE_STRIP_AUTH=1")
 fi
 
+if [ -n "$WORKTREE" ]; then
+    PROJECT_MOUNT=(-v "$PROJECT_DIR:/repo")
+else
+    PROJECT_MOUNT=(-v "$PROJECT_DIR:/workspace")
+fi
+
 exec docker run -it --rm \
     --hostname claude-sandbox \
     --network host \
     --pull always \
-    -v "$PROJECT_DIR:/workspace" \
+    "${PROJECT_MOUNT[@]}" \
     -v "$CLAUDE_CONFIG:/home/claude/.claude" \
     -v /var/run/docker.sock:/var/run/docker.sock \
     "${OPTIONAL_MOUNTS[@]}" \

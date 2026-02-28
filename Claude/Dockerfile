@@ -29,8 +29,8 @@ RUN usermod -l claude -d /home/claude -m -s /bin/zsh node \
     && groupmod -n claude node \
     && usermod -aG ${HOST_DOCKER_GID} claude
 
-RUN mkdir -p /workspace /home/claude/.claude \
-    && chown -R claude:claude /workspace /home/claude/.claude
+RUN mkdir -p /workspace /repo /home/claude/.claude \
+    && chown -R claude:claude /workspace /repo /home/claude/.claude
 
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
 ENV PATH=$PATH:/usr/local/share/npm-global/bin
