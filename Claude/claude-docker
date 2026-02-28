@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+IMAGE_NAME="simplycodedsoftware/claude-sandbox:latest"
+PROJECT_DIR=""
+CLAUDE_CONFIG="$HOME/.claude"
+CLAUDE_ARGS=()
+
+usage() {
+    cat <<EOF
+Usage: claude-docker [options] [project-dir] [-- extra claude args...]
+
+Options:
+  --claude-config DIR    Claude config directory (default: \$HOME/.claude)
+  --help                 Show this help
+
+Examples:
+  claude-docker
+  claude-docker ~/projects/my-app
+  claude-docker --claude-config ~/.claude-work .
+  claude-docker . -- --continue
+EOF
+    exit 0
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --claude-config) CLAUDE_CONFIG="$2"; shift 2 ;;
+        --help)       usage ;;
+        --)           shift; CLAUDE_ARGS=("$@"); break ;;
+        *)            PROJECT_DIR="$1"; shift ;;
+    esac
+done
+
+PROJECT_DIR="${PROJECT_DIR:-$(pwd)}"
+PROJECT_DIR="$(cd "$PROJECT_DIR" && pwd)"
+CLAUDE_CONFIG="$(cd "$CLAUDE_CONFIG" && pwd)"
+
+docker pull "$IMAGE_NAME"
+
+echo "Starting Claude Code in Docker..."
+echo "  Project:  $PROJECT_DIR"
+echo "  Config:   $CLAUDE_CONFIG"
+
+OPTIONAL_MOUNTS=()
+[ -f "$HOME/.claude.json" ]   && OPTIONAL_MOUNTS+=(-v "$HOME/.claude.json:/home/claude/.claude.host.json:ro")
+[ -d "$HOME/.ssh" ]           && OPTIONAL_MOUNTS+=(-v "$HOME/.ssh:/home/claude/.ssh:ro")
+[ -f "$HOME/.gitconfig" ]     && OPTIONAL_MOUNTS+=(-v "$HOME/.gitconfig:/home/claude/.gitconfig:ro")
+[ -d "$HOME/.config/gh" ]     && OPTIONAL_MOUNTS+=(-v "$HOME/.config/gh:/home/claude/.config/gh:ro")
+
+exec docker run -it --rm \
+    --hostname claude-sandbox \
+    --network host \
+    --pull always \
+    -v "$PROJECT_DIR:/workspace" \
+    -v "$CLAUDE_CONFIG:/home/claude/.claude" \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    "${OPTIONAL_MOUNTS[@]}" \
+    "$IMAGE_NAME" "${CLAUDE_ARGS[@]+"${CLAUDE_ARGS[@]}"}"
