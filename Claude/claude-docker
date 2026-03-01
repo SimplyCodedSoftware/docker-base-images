@@ -4,6 +4,7 @@ set -euo pipefail
 IMAGE_NAME="simplycodedsoftware/claude-sandbox:latest"
 PROJECT_DIR=""
 WORKTREE=""
+WORKTREE_DIR=""
 CLAUDE_CONFIG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 CLAUDE_ARGS=()
 
@@ -12,8 +13,11 @@ usage() {
 Usage: claude-docker [options] [project-dir] [-- extra claude args...]
 
 Options:
-  --worktree, -w <name>  Create a git worktree on the given branch
-  --help                 Show this help
+  --worktree, -w <name>       Create a git worktree on the given branch
+  --worktree-dir, -d <path>   Host directory for worktrees (required with --worktree)
+                               Mounted at the same path inside the container so
+                               docker-compose bind mounts work with the host daemon.
+  --help                      Show this help
 
 Environment:
   CLAUDE_CONFIG_DIR      Claude config directory (default: \$HOME/.claude)
@@ -21,8 +25,8 @@ Environment:
 Examples:
   claude-docker
   claude-docker ~/projects/my-app
-  claude-docker --worktree feature-foo ~/projects/my-app
-  claude-docker -w fix-bug .
+  claude-docker --worktree feature-foo --worktree-dir /tmp/claude-worktrees ~/projects/my-app
+  claude-docker -w fix-bug -d /tmp/claude-worktrees .
   CLAUDE_CONFIG_DIR=~/.claude-personal claude-docker .
   claude-docker . -- --continue
 EOF
@@ -32,7 +36,10 @@ EOF
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --help)       usage ;;
-        --worktree|-w) WORKTREE="$2"; shift; shift ;;
+        --worktree=*)     WORKTREE="${1#*=}"; shift ;;
+        --worktree|-w)    WORKTREE="$2"; shift; shift ;;
+        --worktree-dir=*) WORKTREE_DIR="${1#*=}"; shift ;;
+        --worktree-dir|-d) WORKTREE_DIR="$2"; shift; shift ;;
         --)           shift; CLAUDE_ARGS=("$@"); break ;;
         *)            PROJECT_DIR="$1"; shift ;;
     esac
@@ -42,12 +49,23 @@ PROJECT_DIR="${PROJECT_DIR:-$(pwd)}"
 PROJECT_DIR="$(cd "$PROJECT_DIR" && pwd)"
 CLAUDE_CONFIG="$(cd "$CLAUDE_CONFIG" && pwd)"
 
+if [ -n "$WORKTREE" ] && [ -z "$WORKTREE_DIR" ]; then
+    echo "Error: --worktree-dir is required when using --worktree" >&2
+    echo "  Example: claude-docker -w $WORKTREE -d /tmp/claude-worktrees $PROJECT_DIR" >&2
+    exit 1
+fi
+
+if [ -n "$WORKTREE_DIR" ]; then
+    WORKTREE_DIR="$(mkdir -p "$WORKTREE_DIR" && cd "$WORKTREE_DIR" && pwd)"
+fi
+
 docker pull "$IMAGE_NAME"
 
 echo "Starting Claude Code in Docker..."
 echo "  Project:  $PROJECT_DIR"
 echo "  Config:   $CLAUDE_CONFIG"
 [ -n "$WORKTREE" ] && echo "  Worktree: $WORKTREE"
+[ -n "$WORKTREE_DIR" ] && echo "  Worktree dir: $WORKTREE_DIR"
 
 OPTIONAL_MOUNTS=()
 EXTRA_ENV=()
@@ -59,6 +77,7 @@ EXTRA_ENV=()
 GH_TOKEN="$(gh auth token 2>/dev/null || true)"
 [ -n "$GH_TOKEN" ] && EXTRA_ENV+=(-e "GH_TOKEN=$GH_TOKEN")
 [ -n "$WORKTREE" ] && EXTRA_ENV+=(-e "WORKTREE_BRANCH=$WORKTREE")
+[ -n "$WORKTREE_DIR" ] && EXTRA_ENV+=(-e "WORKTREE_BASE_DIR=$WORKTREE_DIR")
 
 DEFAULT_CONFIG="$(cd "$HOME/.claude" && pwd)"
 if [[ "$CLAUDE_CONFIG" != "$DEFAULT_CONFIG" ]]; then
@@ -66,7 +85,7 @@ if [[ "$CLAUDE_CONFIG" != "$DEFAULT_CONFIG" ]]; then
 fi
 
 if [ -n "$WORKTREE" ]; then
-    PROJECT_MOUNT=(-v "$PROJECT_DIR:/repo")
+    PROJECT_MOUNT=(-v "$PROJECT_DIR:/repo" -v "$WORKTREE_DIR:$WORKTREE_DIR")
 else
     PROJECT_MOUNT=(-v "$PROJECT_DIR:/workspace")
 fi

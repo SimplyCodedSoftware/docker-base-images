@@ -11,7 +11,8 @@ fi
 
 if [ -n "${WORKTREE_BRANCH:-}" ]; then
     echo "Creating worktree for branch: $WORKTREE_BRANCH"
-    WORKTREE_DIR="/worktrees/$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+    WORKTREE_DIR="${WORKTREE_BASE_DIR}/$(head -c 8 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+    mkdir -p "$WORKTREE_DIR"
     git -C /repo worktree add "$WORKTREE_DIR" "$WORKTREE_BRANCH" 2>/dev/null \
         || git -C /repo worktree add --force "$WORKTREE_DIR" "$WORKTREE_BRANCH" 2>/dev/null \
         || git -C /repo worktree add -b "$WORKTREE_BRANCH" "$WORKTREE_DIR"
