@@ -5,6 +5,7 @@ IMAGE_NAME="simplycodedsoftware/claude-sandbox:latest"
 PROJECT_DIR=""
 WORKTREE=""
 WORKTREE_DIR=""
+RESTORE=false
 CLAUDE_CONFIG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 CLAUDE_ARGS=()
 
@@ -15,8 +16,7 @@ Usage: claude-docker [options] [project-dir] [-- extra claude args...]
 Options:
   --worktree, -w <name>       Create a git worktree on the given branch
   --worktree-dir, -d <path>   Host directory for worktrees (required with --worktree)
-                               Mounted at the same path inside the container so
-                               docker-compose bind mounts work with the host daemon.
+  --restore                   Restore a previously detached worktree
   --help                      Show this help
 
 Environment:
@@ -27,6 +27,7 @@ Examples:
   claude-docker ~/projects/my-app
   claude-docker --worktree feature-foo --worktree-dir /tmp/claude-worktrees ~/projects/my-app
   claude-docker -w fix-bug -d /tmp/claude-worktrees .
+  claude-docker -w fix-bug -d /tmp/claude-worktrees --restore .
   CLAUDE_CONFIG_DIR=~/.claude-personal claude-docker .
   claude-docker . -- --continue
 EOF
@@ -36,6 +37,7 @@ EOF
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --help)       usage ;;
+        --restore)    RESTORE=true; shift ;;
         --worktree=*)     WORKTREE="${1#*=}"; shift ;;
         --worktree|-w)    WORKTREE="$2"; shift; shift ;;
         --worktree-dir=*) WORKTREE_DIR="${1#*=}"; shift ;;
@@ -94,12 +96,28 @@ if [[ "$CLAUDE_CONFIG" != "$DEFAULT_CONFIG" ]]; then
 fi
 
 if [ -n "$WORKTREE" ]; then
+    REPO_NAME="$(basename "$PROJECT_DIR")"
     SAFE_BRANCH="$(echo "$WORKTREE" | tr '/' '-')"
-    ACTUAL_WORKTREE="$WORKTREE_DIR/$SAFE_BRANCH"
+    ACTUAL_WORKTREE="$WORKTREE_DIR/$REPO_NAME/$SAFE_BRANCH"
     if [ -d "$ACTUAL_WORKTREE" ]; then
-        echo "Reusing existing worktree at $ACTUAL_WORKTREE"
+        if [ "$RESTORE" = false ]; then
+            echo "Error: worktree already exists at $ACTUAL_WORKTREE" >&2
+            echo "  Use --restore to resume it, or remove it manually:" >&2
+            echo "    rm -rf $ACTUAL_WORKTREE" >&2
+            exit 1
+        fi
+        echo "Restoring worktree at $ACTUAL_WORKTREE"
+        # Re-register if previously detached (files exist but not registered)
+        if ! git -C "$PROJECT_DIR" worktree list --porcelain | grep -q "^worktree $ACTUAL_WORKTREE\$"; then
+            git -C "$PROJECT_DIR" worktree add --force "$ACTUAL_WORKTREE" "$WORKTREE" 2>/dev/null || true
+        fi
     else
+        if [ "$RESTORE" = true ]; then
+            echo "Error: no worktree to restore at $ACTUAL_WORKTREE" >&2
+            exit 1
+        fi
         echo "Creating worktree for branch: $WORKTREE"
+        mkdir -p "$WORKTREE_DIR/$REPO_NAME"
         git -C "$PROJECT_DIR" worktree add "$ACTUAL_WORKTREE" "$WORKTREE" 2>/dev/null \
             || git -C "$PROJECT_DIR" worktree add --force "$ACTUAL_WORKTREE" "$WORKTREE" 2>/dev/null \
             || git -C "$PROJECT_DIR" worktree add -b "$WORKTREE" "$ACTUAL_WORKTREE"
@@ -110,7 +128,21 @@ else
     PROJECT_MOUNT=(-v "$PROJECT_DIR:$PROJECT_DIR")
 fi
 
-exec docker run -it --rm \
+detach_worktree() {
+    if [ -n "${ACTUAL_WORKTREE:-}" ]; then
+        echo "Detaching worktree (keeping files at $ACTUAL_WORKTREE)..."
+        # Remove git worktree metadata but keep the actual files
+        WORKTREE_GITDIR="$(sed 's/gitdir: //' "$ACTUAL_WORKTREE/.git" 2>/dev/null || true)"
+        if [ -n "$WORKTREE_GITDIR" ] && [ -d "$WORKTREE_GITDIR" ]; then
+            rm -rf "$WORKTREE_GITDIR"
+        fi
+        rm -f "$ACTUAL_WORKTREE/.git"
+        git -C "$PROJECT_DIR" worktree prune 2>/dev/null || true
+    fi
+}
+trap detach_worktree EXIT
+
+docker run -it --rm \
     --hostname claude-sandbox \
     --network host \
     --pull always \
