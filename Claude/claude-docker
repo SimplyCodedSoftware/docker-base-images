@@ -122,8 +122,9 @@ if [ -n "$WORKTREE" ]; then
             || git -C "$PROJECT_DIR" worktree add --force "$ACTUAL_WORKTREE" "$WORKTREE" 2>/dev/null \
             || git -C "$PROJECT_DIR" worktree add -b "$WORKTREE" "$ACTUAL_WORKTREE"
     fi
-    # Mount worktree at the original project path so sessions match
-    PROJECT_MOUNT=(-v "$ACTUAL_WORKTREE:$PROJECT_DIR" -v "$WORKTREE_DIR:$WORKTREE_DIR")
+    # Mount worktree at its real path so docker-compose bind mounts work with the host daemon
+    PROJECT_MOUNT=(-v "$ACTUAL_WORKTREE:$ACTUAL_WORKTREE")
+    EXTRA_ENV+=(-e "HOST_PROJECT_DIR=$ACTUAL_WORKTREE")
 else
     PROJECT_MOUNT=(-v "$PROJECT_DIR:$PROJECT_DIR")
 fi
@@ -152,3 +153,4 @@ docker run -it --rm \
     "${OPTIONAL_MOUNTS[@]}" \
     "${EXTRA_ENV[@]+"${EXTRA_ENV[@]}"}" \
     "$IMAGE_NAME" "${CLAUDE_ARGS[@]+"${CLAUDE_ARGS[@]}"}"
+
