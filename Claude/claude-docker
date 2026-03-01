@@ -49,6 +49,16 @@ PROJECT_DIR="${PROJECT_DIR:-$(pwd)}"
 PROJECT_DIR="$(cd "$PROJECT_DIR" && pwd)"
 CLAUDE_CONFIG="$(cd "$CLAUDE_CONFIG" && pwd)"
 
+GIT_ROOT="$(git -C "$PROJECT_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "$GIT_ROOT" ]; then
+    echo "Error: $PROJECT_DIR is not inside a git repository" >&2
+    exit 1
+fi
+if [ "$PROJECT_DIR" != "$GIT_ROOT" ]; then
+    echo "Error: please run from the git root: $GIT_ROOT" >&2
+    exit 1
+fi
+
 if [ -n "$WORKTREE" ] && [ -z "$WORKTREE_DIR" ]; then
     echo "Error: --worktree-dir is required when using --worktree" >&2
     echo "  Example: claude-docker -w $WORKTREE -d /tmp/claude-worktrees $PROJECT_DIR" >&2
@@ -76,8 +86,7 @@ EXTRA_ENV=()
 
 GH_TOKEN="$(gh auth token 2>/dev/null || true)"
 [ -n "$GH_TOKEN" ] && EXTRA_ENV+=(-e "GH_TOKEN=$GH_TOKEN")
-[ -n "$WORKTREE" ] && EXTRA_ENV+=(-e "WORKTREE_BRANCH=$WORKTREE")
-[ -n "$WORKTREE_DIR" ] && EXTRA_ENV+=(-e "WORKTREE_BASE_DIR=$WORKTREE_DIR")
+EXTRA_ENV+=(-e "HOST_PROJECT_DIR=$PROJECT_DIR")
 
 DEFAULT_CONFIG="$(cd "$HOME/.claude" && pwd)"
 if [[ "$CLAUDE_CONFIG" != "$DEFAULT_CONFIG" ]]; then
@@ -85,10 +94,20 @@ if [[ "$CLAUDE_CONFIG" != "$DEFAULT_CONFIG" ]]; then
 fi
 
 if [ -n "$WORKTREE" ]; then
-    PROJECT_MOUNT=(-v "$PROJECT_DIR:/repo" -v "$WORKTREE_DIR:$WORKTREE_DIR")
+    SAFE_BRANCH="$(echo "$WORKTREE" | tr '/' '-')"
+    ACTUAL_WORKTREE="$WORKTREE_DIR/$SAFE_BRANCH"
+    if [ -d "$ACTUAL_WORKTREE" ]; then
+        echo "Reusing existing worktree at $ACTUAL_WORKTREE"
+    else
+        echo "Creating worktree for branch: $WORKTREE"
+        git -C "$PROJECT_DIR" worktree add "$ACTUAL_WORKTREE" "$WORKTREE" 2>/dev/null \
+            || git -C "$PROJECT_DIR" worktree add --force "$ACTUAL_WORKTREE" "$WORKTREE" 2>/dev/null \
+            || git -C "$PROJECT_DIR" worktree add -b "$WORKTREE" "$ACTUAL_WORKTREE"
+    fi
+    # Mount worktree at the original project path so sessions match
+    PROJECT_MOUNT=(-v "$ACTUAL_WORKTREE:$PROJECT_DIR" -v "$WORKTREE_DIR:$WORKTREE_DIR")
 else
     PROJECT_MOUNT=(-v "$PROJECT_DIR:$PROJECT_DIR")
-    EXTRA_ENV+=(-e "HOST_PROJECT_DIR=$PROJECT_DIR")
 fi
 
 exec docker run -it --rm \

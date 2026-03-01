@@ -27,7 +27,8 @@ RUN groupadd -g ${HOST_DOCKER_GID} hostdocker || true
 
 RUN usermod -l claude -d /home/claude -m -s /bin/zsh node \
     && groupmod -n claude node \
-    && usermod -aG ${HOST_DOCKER_GID} claude
+    && usermod -aG ${HOST_DOCKER_GID} claude \
+    && echo "claude ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/claude
 
 RUN mkdir -p /workspace /repo /worktrees /home/claude/.claude \
     && chown -R claude:claude /workspace /repo /worktrees /home/claude/.claude
