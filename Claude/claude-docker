@@ -87,7 +87,8 @@ fi
 if [ -n "$WORKTREE" ]; then
     PROJECT_MOUNT=(-v "$PROJECT_DIR:/repo" -v "$WORKTREE_DIR:$WORKTREE_DIR")
 else
-    PROJECT_MOUNT=(-v "$PROJECT_DIR:/workspace")
+    PROJECT_MOUNT=(-v "$PROJECT_DIR:$PROJECT_DIR")
+    EXTRA_ENV+=(-e "HOST_PROJECT_DIR=$PROJECT_DIR")
 fi
 
 exec docker run -it --rm \

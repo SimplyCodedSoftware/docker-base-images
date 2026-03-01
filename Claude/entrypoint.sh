@@ -18,5 +18,5 @@ if [ -n "${WORKTREE_BRANCH:-}" ]; then
         || git -C /repo worktree add -b "$WORKTREE_BRANCH" "$WORKTREE_DIR"
 fi
 
-cd "${WORKTREE_DIR:-/workspace}"
+cd "${WORKTREE_DIR:-${HOST_PROJECT_DIR:-/workspace}}"
 exec claude --dangerously-skip-permissions "$@"
