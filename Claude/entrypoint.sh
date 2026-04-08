@@ -1,6 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
+if [ -S /var/run/docker.sock ]; then
+    SOCK_GID=$(stat -c '%g' /var/run/docker.sock)
+    sudo groupmod -g "$SOCK_GID" hostdocker 2>/dev/null || true
+    sudo usermod -aG hostdocker claude 2>/dev/null || true
+fi
+
 if [ -f "$HOME/.claude.host.json" ]; then
     if [ "${CLAUDE_STRIP_AUTH:-}" = "1" ]; then
         jq '.installMethod = "npm" | del(.primaryApiKey, .oauthAccount, .customApiKeyResponses)' "$HOME/.claude.host.json" > "$HOME/.claude.json"
