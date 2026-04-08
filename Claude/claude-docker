@@ -6,6 +6,7 @@ PROJECT_DIR=""
 WORKTREE=""
 WORKTREE_DIR=""
 RESTORE=false
+ENTRYPOINT_PROMPT=""
 CLAUDE_CONFIG="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 CLAUDE_ARGS=()
 
@@ -17,6 +18,7 @@ Options:
   --worktree, -w <name>       Create a git worktree on the given branch
   --worktree-dir, -d <path>   Host directory for worktrees (required with --worktree)
   --restore                   Restore a previously detached worktree
+  --entrypoint-prompt <text>  Run a Claude prompt to set up the environment before starting
   --help                      Show this help
 
 Environment:
@@ -29,6 +31,7 @@ Examples:
   claude-docker -w fix-bug -d /tmp/claude-worktrees .
   claude-docker -w fix-bug -d /tmp/claude-worktrees --restore .
   CLAUDE_CONFIG_DIR=~/.claude-personal claude-docker .
+  claude-docker --entrypoint-prompt="Add .env file in the root of the project" .
   claude-docker . -- --continue
 EOF
     exit 0
@@ -42,6 +45,8 @@ while [[ $# -gt 0 ]]; do
         --worktree|-w)    WORKTREE="$2"; shift; shift ;;
         --worktree-dir=*) WORKTREE_DIR="${1#*=}"; shift ;;
         --worktree-dir|-d) WORKTREE_DIR="$2"; shift; shift ;;
+        --entrypoint-prompt=*) ENTRYPOINT_PROMPT="${1#*=}"; shift ;;
+        --entrypoint-prompt)   ENTRYPOINT_PROMPT="$2"; shift; shift ;;
         --)           shift; CLAUDE_ARGS=("$@"); break ;;
         *)            PROJECT_DIR="$1"; shift ;;
     esac
@@ -51,14 +56,16 @@ PROJECT_DIR="${PROJECT_DIR:-$(pwd)}"
 PROJECT_DIR="$(cd "$PROJECT_DIR" && pwd)"
 CLAUDE_CONFIG="$(cd "$CLAUDE_CONFIG" && pwd)"
 
-GIT_ROOT="$(git -C "$PROJECT_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
-if [ -z "$GIT_ROOT" ]; then
-    echo "Error: $PROJECT_DIR is not inside a git repository" >&2
-    exit 1
-fi
-if [ "$PROJECT_DIR" != "$GIT_ROOT" ]; then
-    echo "Error: please run from the git root: $GIT_ROOT" >&2
-    exit 1
+if [ -n "$WORKTREE" ]; then
+    GIT_ROOT="$(git -C "$PROJECT_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
+    if [ -z "$GIT_ROOT" ]; then
+        echo "Error: $PROJECT_DIR is not inside a git repository" >&2
+        exit 1
+    fi
+    if [ "$PROJECT_DIR" != "$GIT_ROOT" ]; then
+        echo "Error: please run from the git root: $GIT_ROOT" >&2
+        exit 1
+    fi
 fi
 
 if [ -n "$WORKTREE" ] && [ -z "$WORKTREE_DIR" ]; then
@@ -78,6 +85,7 @@ echo "  Project:  $PROJECT_DIR"
 echo "  Config:   $CLAUDE_CONFIG"
 [ -n "$WORKTREE" ] && echo "  Worktree: $WORKTREE"
 [ -n "$WORKTREE_DIR" ] && echo "  Worktree dir: $WORKTREE_DIR"
+[ -n "$ENTRYPOINT_PROMPT" ] && echo "  Entrypoint:  $ENTRYPOINT_PROMPT"
 
 OPTIONAL_MOUNTS=()
 EXTRA_ENV=()
@@ -88,6 +96,7 @@ EXTRA_ENV=()
 
 GH_TOKEN="$(gh auth token 2>/dev/null || true)"
 [ -n "$GH_TOKEN" ] && EXTRA_ENV+=(-e "GH_TOKEN=$GH_TOKEN")
+[ -n "$ENTRYPOINT_PROMPT" ] && EXTRA_ENV+=(-e "ENTRYPOINT_PROMPT=$ENTRYPOINT_PROMPT")
 EXTRA_ENV+=(-e "HOST_PROJECT_DIR=$PROJECT_DIR")
 
 DEFAULT_CONFIG="$(cd "$HOME/.claude" && pwd)"
@@ -107,10 +116,6 @@ if [ -n "$WORKTREE" ]; then
             exit 1
         fi
         echo "Restoring worktree at $ACTUAL_WORKTREE"
-        # Re-register if previously detached (files exist but not registered)
-        if ! git -C "$PROJECT_DIR" worktree list --porcelain | grep -q "^worktree $ACTUAL_WORKTREE\$"; then
-            git -C "$PROJECT_DIR" worktree add --force "$ACTUAL_WORKTREE" "$WORKTREE" 2>/dev/null || true
-        fi
     else
         if [ "$RESTORE" = true ]; then
             echo "Error: no worktree to restore at $ACTUAL_WORKTREE" >&2
@@ -122,28 +127,14 @@ if [ -n "$WORKTREE" ]; then
             || git -C "$PROJECT_DIR" worktree add --force "$ACTUAL_WORKTREE" "$WORKTREE" 2>/dev/null \
             || git -C "$PROJECT_DIR" worktree add -b "$WORKTREE" "$ACTUAL_WORKTREE"
     fi
-    # Mount worktree at its real path so docker-compose bind mounts work with the host daemon
-    PROJECT_MOUNT=(-v "$ACTUAL_WORKTREE:$ACTUAL_WORKTREE")
+    # Mount worktree + main repo's .git so git operations work inside the container
+    PROJECT_MOUNT=(-v "$ACTUAL_WORKTREE:$ACTUAL_WORKTREE" -v "$PROJECT_DIR/.git:$PROJECT_DIR/.git")
     EXTRA_ENV+=(-e "HOST_PROJECT_DIR=$ACTUAL_WORKTREE")
 else
     PROJECT_MOUNT=(-v "$PROJECT_DIR:$PROJECT_DIR")
 fi
 
-detach_worktree() {
-    if [ -n "${ACTUAL_WORKTREE:-}" ]; then
-        echo "Detaching worktree (keeping files at $ACTUAL_WORKTREE)..."
-        # Remove git worktree metadata but keep the actual files
-        WORKTREE_GITDIR="$(sed 's/gitdir: //' "$ACTUAL_WORKTREE/.git" 2>/dev/null || true)"
-        if [ -n "$WORKTREE_GITDIR" ] && [ -d "$WORKTREE_GITDIR" ]; then
-            rm -rf "$WORKTREE_GITDIR"
-        fi
-        rm -f "$ACTUAL_WORKTREE/.git"
-        git -C "$PROJECT_DIR" worktree prune 2>/dev/null || true
-    fi
-}
-trap detach_worktree EXIT
-
-docker run -it --rm \
+exec docker run -it --rm \
     --hostname claude-sandbox \
     --network host \
     --pull always \

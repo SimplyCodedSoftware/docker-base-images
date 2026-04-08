@@ -2,6 +2,7 @@ FROM node:22
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git less sudo zsh fzf jq make openssh-client \
+    python3 python3-pip python3-venv \
     ca-certificates curl gnupg \
     && install -m 0755 -d /etc/apt/keyrings \
     && curl -fsSL https://download.docker.com/linux/debian/gpg \
