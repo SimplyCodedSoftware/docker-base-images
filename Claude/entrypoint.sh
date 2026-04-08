@@ -7,6 +7,13 @@ if [ -S /var/run/docker.sock ]; then
     sudo usermod -aG hostdocker claude 2>/dev/null || true
 fi
 
+# Create symlink so plugin paths from host resolve inside the container
+# (installed_plugins.json references /home/<host-user>/.claude/... paths)
+if [ -d "$HOME/.claude/plugins" ] && [ -n "${HOST_HOME:-}" ] && [ "$HOST_HOME" != "$HOME" ]; then
+    sudo mkdir -p "$(dirname "$HOST_HOME")"
+    sudo ln -sfn "$HOME/.claude" "$HOST_HOME/.claude"
+fi
+
 if [ -f "$HOME/.claude.host.json" ]; then
     if [ "${CLAUDE_STRIP_AUTH:-}" = "1" ]; then
         jq '.installMethod = "npm" | del(.primaryApiKey, .oauthAccount, .customApiKeyResponses)' "$HOME/.claude.host.json" > "$HOME/.claude.json"
